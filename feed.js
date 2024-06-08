@@ -126,9 +126,9 @@ router.get('/getTradeShow', (req, res) => {
 
 
 router.post('/insertTradeShow', (req, res) => {
-  const { title, website_Url, dltFeedDate } = req.body;
+  const { title, website_Url } = req.body;
   const createdDate = new Date();
-  const data = { title,website_Url, dltFeedDate,createdDate };
+  const data = { title,website_Url,createdDate };
 
   const sql = 'INSERT INTO tradeShow SET ?';
 
