@@ -61,7 +61,7 @@ router.get('/getCommunityQuestions', (req, res) => {
       c.urlLink, 
       c.ques_postedDate
   ORDER BY 
-      c.ques_postedDate DESC
+      c.ques_postedDate ASC
   LIMIT ? OFFSET ?`; // Placeholders for limit and offset values
  
 

@@ -19,8 +19,8 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'https://avchamps.com/redirected-page';
-let googleRedirectUrl = 'https://avchamps.com/auth/google/callback'
+let url = 'http://localhost:4500/redirected-page';
+let googleRedirectUrl = 'http://localhost:3000/auth/google/callback'
 let linkedinRedirectUrl = 'https://avchamps.com/nodejs/auth/linkedin/callback';
 let facebookRedirectUrl = 'https://avchamps.com/auth/facebook/callback';
 
