@@ -19,10 +19,13 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://localhost:4500/redirected-page';
-let googleRedirectUrl = 'http://localhost:3000/auth/google/callback'
+let url = 'http://localhost:4200/redirected-page';
+// let url = 'https://avchamps.com/redirected-page';
+// let googleRedirectUrl = 'https://avchamps.com/nodejs/auth/google/callback';
+let googleRedirectUrl = 'http://localhost:3000/auth/google/callback';
 let linkedinRedirectUrl = 'https://avchamps.com/nodejs/auth/linkedin/callback';
 let facebookRedirectUrl = 'https://avchamps.com/auth/facebook/callback';
+let microsoftRedirectUrl = 'https://avchamps.com/nodejs/auth/microsoft/callback';
 
 passport.serializeUser((user, done) => {
   done(null, user);
@@ -134,6 +137,107 @@ router.get('/auth/linkedin/callback', (req, res) => {
 });
 
 
+router.get('/auth/microsoft', (req, res) => {
+  destination = req.query.destination || 'default';
+  const clientId = process.env.MICROSOFT_CLIENT_ID;
+  const redirectUri = microsoftRedirectUrl;
+  const scope = 'openid email profile User.Read User.ReadBasic.All';
+  const responseType = 'code';
+  const microsoftAuthUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}`;
+  res.redirect(microsoftAuthUrl);
+});
+
+router.get('/auth/microsoft/callback', async (req, res) => {
+  const clientId = process.env.MICROSOFT_CLIENT_ID;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+  const redirectUri = microsoftRedirectUrl;
+  const code = req.query.code;
+
+  if (!clientSecret) {
+    console.error('Microsoft client secret is missing or invalid.');
+    return res.status(500).send('Microsoft client secret is missing or invalid.');
+  }
+
+  const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+  const tokenParams = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    code: code,
+    redirect_uri: redirectUri,
+    grant_type: 'authorization_code'
+  };
+
+  try {
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(tokenParams)
+    });
+    const data = await tokenResponse.json();
+    console.log("Token Response:", data);
+
+    if (!data.id_token) {
+      throw new Error('id_token not provided by Microsoft');
+    }
+
+    const idToken = data.id_token;
+    const decodedToken = jwt.decode(idToken);
+    console.log("Decoded Token:", decodedToken);
+
+    if (!decodedToken) {
+      throw new Error('Invalid id_token provided by Microsoft');
+    }
+
+    // Fetch user profile using Microsoft Graph API
+    const userInfoResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
+      headers: {
+        'Authorization': `Bearer ${data.access_token}`
+      }
+    });
+    const userInfo = await userInfoResponse.json();
+    console.log("User Info:", userInfo);
+
+    if (!userInfo || !userInfo.mail) {
+      throw new Error('Email not provided by Microsoft');
+    }
+
+    // Fetch user profile photo
+    let photoUrl = null;
+    try {
+      const photoResponse = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`
+        }
+      });
+      if (photoResponse.ok) {
+        const photoBuffer = await photoResponse.arrayBuffer();
+        photoUrl = `data:${photoResponse.headers.get('Content-Type')};base64,` + Buffer.from(photoBuffer).toString('base64');
+      }
+    } catch (error) {
+      console.error('Error fetching profile photo:', error);
+    }
+
+    const userData = {
+      ...decodedToken,
+      email: decodedToken.preferred_username,
+      given_name: decodedToken.preferred_username.split('@')[0] || '',
+      name: decodedToken.preferred_username.split('@')[0] || '',
+      photo: photoUrl
+    };
+
+    console.log('userData', userData);
+
+    insertUserData(userData);
+    jwtToken = jwt.sign(userData, secretKey);
+    res.redirect(`${url}/${destination}`);
+  } catch (error) {
+    console.error('Error exchanging authorization code for access token:', error);
+    res.status(500).send('Error exchanging authorization code for access token');
+  }
+});
+
 router.get('/auth/facebook', (req, res) => {
   destination = req.query.destination || 'default';
   const clientId = process.env.FACEBOOK_CLIENT_ID;
@@ -200,7 +304,6 @@ router.get('/auth/facebook/callback', (req, res) => {
     });
 });
 
-
 function insertUserData(userData, jwtSessionToken) {
   console.log('New', userData);
   const { email, name, given_name, family_name, picture } = userData;
@@ -254,7 +357,7 @@ function insertUserData(userData, jwtSessionToken) {
       });
     } else {
       console.log('New user detected:', email);
-      sendMail(email); // Send email for new user
+      // sendMail(email); // Send email for new user
       db.query(insertUserSql, values, (err, result) => {
         if (err) {
           console.error('Error inserting user data:', err);

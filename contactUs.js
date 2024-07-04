@@ -56,7 +56,7 @@ router.post('/contactUs', (req, res) => {
 
     db.query(sql, data, (err, result) => {
         if (err) {
-            return res.send({ status: true, message: 'Failed to Submit' });
+            return res.send({ status: false, message: 'Failed to Submit' });
         } else {
             return res.send({ status: true, message: 'Your Request Submitted Successfully.' });
         }
