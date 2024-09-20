@@ -20,9 +20,10 @@ let jwtToken;
 let destination;
 let userEmailId;
 let url = 'http://localhost:4200/redirected-page';
+let googleRedirectUrl = 'http://localhost:3000/auth/google/callback';
 // let url = 'https://avchamps.com/redirected-page';
 // let googleRedirectUrl = 'https://avchamps.com/nodejs/auth/google/callback';
-let googleRedirectUrl = 'http://localhost:3000/auth/google/callback';
+
 let linkedinRedirectUrl = 'https://avchamps.com/nodejs/auth/linkedin/callback';
 let facebookRedirectUrl = 'https://avchamps.com/auth/facebook/callback';
 let microsoftRedirectUrl = 'https://avchamps.com/nodejs/auth/microsoft/callback';
@@ -418,6 +419,7 @@ function sendMail(email) {
 
 router.get('/getSession', (req, res) => {
   emailId = userEmailId;
+  console.log("getSession calling");
   const sql = 'SELECT emailId,firstName,jwtToken FROM signup_table WHERE emailId = ?';
   db.query(sql, [userEmailId], (err, results) => {
     if (err) {

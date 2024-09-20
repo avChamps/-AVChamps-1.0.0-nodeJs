@@ -48,7 +48,7 @@ router.get('/getFeedData', (req, res) => {
 });
 
 router.get('/getEvents', (req, res) => {
-  const sql = 'SELECT * FROM events';
+  const sql = 'SELECT * from sample_events';
 
   db.query(sql, (err, result) => {
     if (err) {
@@ -64,7 +64,7 @@ router.get('/getEvents', (req, res) => {
 }); 
 
 router.post('/insertEvent', (req, res) => {
-  const { event_name, event_date, eventEndDate, website_Url, dltFeedDate } = req.body;
+  const { event_name, event_date, eventType, eventEndDate, website_Url, dltFeedDate } = req.body;
   console.log(req.body);
   // Parse the dates
   const startDate = moment(event_date, 'YYYY-MM-DD');
@@ -83,10 +83,11 @@ router.post('/insertEvent', (req, res) => {
       event_date: date.format('YYYY-MM-DD'), // Format date to match SQL date format
       website_Url,
       dltFeedDate,
+      eventType
     };
     // Create a promise for each insert query
     const insertPromise = new Promise((resolve, reject) => {
-      const sql = 'INSERT INTO events SET ?';
+      const sql = 'INSERT INTO sample_events SET ?';
       db.query(sql, data, (err, result) => {
         if (err) {
           return reject(err);
@@ -153,16 +154,16 @@ router.get('/getMacData/:sysAddress', async (req, res) => {
 });
 
 router.post('/postEvent', (req) => {
-  const { eventName, eventUrl, startDate, endDate } = req.body;
+  const { eventName, eventUrl, startDate, endDate,eventType } = req.body;
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
   const startDateOnly = startDateObj.toISOString().split('T')[0];
   const endDateOnly = endDateObj.toISOString().split('T')[0];
-  sendMail(eventName, eventUrl, startDateOnly, endDateOnly);
+  sendMail(eventName, eventUrl, startDateOnly, endDateOnly,eventType);
 })
 
-function sendMail(eventName, eventUrl, startDate, endDate) {
-  console.log(eventName, eventUrl, startDate, endDate);
+function sendMail(eventName, eventUrl, startDate, endDate,eventType) {
+  console.log(eventName, eventUrl, startDate, endDate, eventType);
   const transporter = nm.createTransport({
       host: "smtp.gmail.com",
       port: 587,
@@ -180,7 +181,8 @@ function sendMail(eventName, eventUrl, startDate, endDate) {
           <p>Event Name: ${eventName}</p>
           <p>Event Url: ${eventUrl}</p>
           <p>StartDate: ${startDate}</p>
-          <p>EndDate: ${endDate}</p>`
+          <p>EndDate: ${endDate}</p>
+          <p>EventType : ${eventType}</p>`
   };
 
   transporter.sendMail(options, function (error, info) {

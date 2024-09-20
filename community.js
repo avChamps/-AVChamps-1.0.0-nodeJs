@@ -61,7 +61,7 @@ router.get('/getCommunityQuestions', (req, res) => {
       c.urlLink, 
       c.ques_postedDate
   ORDER BY 
-      c.ques_postedDate ASC
+      c.qId DESC
   LIMIT ? OFFSET ?`; // Placeholders for limit and offset values
  
 
@@ -222,7 +222,7 @@ router.post('/insertCommunityAnswer', upload.single('image'), (req, res) => {
         console.error('Error inserting community_answers:', err);
         return res.status(500).json({ error: 'Error inserting seller info' });
       }
-      return res.json({ status: true, message: 'Answer posted successfully' });
+      return res.json({ status: true, message: 'Comment posted successfully' });
     });
 });
 

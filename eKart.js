@@ -23,17 +23,31 @@ const s3 = new AWS.S3();
 router.get('/getCartData', (req, res) => {
   const offset = parseInt(req.query.offset) || 0;
   const limit = 6;
-  const searchText = req.query.searchText || ''; 
+  const searchText = req.query.searchText || '';
+  const productCategory = req.query.productCategory || '';
+  const location = req.query.location || '';
   let sql;
-  let params;
+  let params = [];
+
+  sql = `SELECT * FROM seller_Info WHERE (productStatus IS NULL OR productStatus != 'soldOut')`;
 
   if (searchText) {
-    sql = `SELECT * FROM seller_Info WHERE (productStatus IS NULL OR productStatus != 'soldOut') AND title LIKE ? ORDER BY postedDate DESC LIMIT ?, ?;`;
-    params = [`%${searchText}%`, offset, limit];
-  } else {
-    sql = `SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != 'soldOut' ORDER BY postedDate DESC LIMIT ?, ?;`;
-    params = [offset, limit];
+    sql += ` AND title LIKE ?`;
+    params.push(`%${searchText}%`);
   }
+
+  if (productCategory) {
+    sql += ` AND productCategory = ?`;
+    params.push(productCategory);
+  }
+
+  if (location) {
+    sql += ` AND location = ?`;
+    params.push(location);
+  }
+
+  sql += ` ORDER BY postedDate DESC LIMIT ?, ?;`;
+  params.push(offset, limit);
 
   db.query(sql, params, (err, results) => {
     if (err) {
@@ -45,6 +59,7 @@ router.get('/getCartData', (req, res) => {
     }
   });
 });
+
 
 
 router.get('/getUploadData/:emailId', (req, res) => {
@@ -84,7 +99,7 @@ router.post('/deleteCartRecords', (req, res) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/updateCart', upload.single('image'), (req, res) => {
-  const { emailId, title, description, location, mobileNumber, price, slNo } = req.body;
+  const { emailId, title, description, location,productCategory, mobileNumber, price, slNo } = req.body;
 
   let imagePath = null; // Initialize imagePath to null
 
@@ -120,9 +135,9 @@ router.post('/updateCart', upload.single('image'), (req, res) => {
 
   function updateSellerInfo() {
     const postedDate = new Date();
-    const data = [emailId, title, description, location, mobileNumber, price, postedDate, imagePath, slNo];
+    const data = [emailId, title, description, location,productCategory, mobileNumber, price, postedDate, imagePath, slNo];
     console.log(data);
-    const sql = 'UPDATE seller_Info SET emailId = ?, title = ?, description = ?, location = ?, mobileNumber = ?, price = ?,postedDate = ?,imagePath = ? WHERE slNo = ?';
+    const sql = 'UPDATE seller_Info SET emailId = ?, title = ?, description = ?, location = ?, productCategory = ?, mobileNumber = ?, price = ?,postedDate = ?,imagePath = ? WHERE slNo = ?';
 
     db.query(sql, data, (err, result) => {
       if (err) {
@@ -154,7 +169,7 @@ router.post('/soldOutProduct', (req, res) => {
 
 
 router.post('/insertCart', upload.single('image'), (req, res) => {
-  const { emailId, title, description, location, mobileNumber, price, userName } = req.body;
+  const { emailId, title, description, productCategory,location, mobileNumber, price, userName } = req.body;
 
   // Handle file upload here
   const imageBuffer = req.file.buffer;
@@ -165,7 +180,7 @@ router.post('/insertCart', upload.single('image'), (req, res) => {
       console.log('Image uploaded successfully:', imageUrl);
       const imagePath = imageUrl;
       const postedDate = new Date();
-      const data = { emailId, title, description, location, mobileNumber, price, postedDate, imagePath, userName };
+      const data = { emailId, title, description,productCategory, location, mobileNumber, price, postedDate, imagePath, userName };
        console.log(data);
       const sql = 'INSERT INTO seller_Info SET ?';
     

@@ -13,23 +13,29 @@ const contactUs = require('./contactUs.js');
 const profileInfo = require('./profile_Info.js');
 const community = require('./community.js');
 const socialSignUp = require('./socialLogin.js');
+const text_generator = require('./text_generator.js');
+const jobPortal = require('./jobs_portal.js');
+
 const app = express();
 const port = 3000;
 app.use(express.json());
 app.use(cors());
 
 app.use('/', signUp);
-app.use('/',feed);
-app.use('/',getUserData);
-app.use('/',eKart);
-app.use('/',feedBack);
-app.use('/',download);
-app.use('/',bussinessCard);
-app.use('/',contactUs);
-app.use('/',profileInfo);
-app.use('/',community);
-app.use('/',socialSignUp);
+app.use('/', feed);
+app.use('/', getUserData);
+app.use('/', eKart);
+app.use('/', feedBack);
+app.use('/', download);
+app.use('/', bussinessCard);
+app.use('/', contactUs);
+app.use('/', profileInfo);
+app.use('/', community);
+app.use('/', socialSignUp);
+app.use('/', text_generator);
+app.use('/',jobPortal);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
