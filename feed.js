@@ -48,7 +48,7 @@ router.get('/getFeedData', (req, res) => {
 });
 
 router.get('/getEvents', (req, res) => {
-  const sql = 'SELECT * from sample_events';
+  const sql = 'SELECT * from sample_events order BY event_date ASC; ';
 
   db.query(sql, (err, result) => {
     if (err) {
@@ -153,13 +153,14 @@ router.get('/getMacData/:sysAddress', async (req, res) => {
   }
 });
 
-router.post('/postEvent', (req) => {
+router.post('/postEvent', (req,res) => {
   const { eventName, eventUrl, startDate, endDate,eventType } = req.body;
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
   const startDateOnly = startDateObj.toISOString().split('T')[0];
   const endDateOnly = endDateObj.toISOString().split('T')[0];
   sendMail(eventName, eventUrl, startDateOnly, endDateOnly,eventType);
+  res.status(200).json({ message: 'Event submitted and email sent successfully!' });
 })
 
 function sendMail(eventName, eventUrl, startDate, endDate,eventType) {
@@ -196,10 +197,11 @@ function sendMail(eventName, eventUrl, startDate, endDate,eventType) {
 
 const deleteExpiredRecords = () => {
   const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
+  console.log('Current Date:', currentDate);
   const deleteQueries = [
-    `DELETE FROM Community_Announcements WHERE dltFeedDate = '${currentDate}'`,
-    `DELETE FROM events WHERE dltFeedDate = '${currentDate}'`,
-    `DELETE FROM tradeShow WHERE dltFeedDate = '${currentDate}'`
+    `DELETE FROM Community_Announcements WHERE dltFeedDate <= '${currentDate}'`,
+    `DELETE FROM sample_events WHERE dltFeedDate <= '${currentDate}'`,
+    `DELETE FROM tradeShow WHERE dltFeedDate <= '${currentDate}'`
   ];
   deleteQueries.forEach((deleteSql) => {
     db.query(deleteSql, (err, result) => {
@@ -213,8 +215,9 @@ const deleteExpiredRecords = () => {
 };
 
 // Schedule the task to run every day at midnight (00:00)
-cron.schedule('58 11 * * *', () => {
+cron.schedule('55 23 * * *', () => {
   deleteExpiredRecords();
 });
 
 module.exports = router;
+
