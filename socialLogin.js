@@ -358,7 +358,7 @@ function insertUserData(userData, jwtSessionToken) {
       });
     } else {
       console.log('New user detected:', email);
-      // sendMail(email); // Send email for new user
+      sendMail(email); // Send email for new user
       db.query(insertUserSql, values, (err, result) => {
         if (err) {
           console.error('Error inserting user data:', err);
@@ -372,16 +372,16 @@ function insertUserData(userData, jwtSessionToken) {
 
 function sendMail(email) {
   const transporter = nm.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
+      host: "smtpout.secureserver.net",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.GMAIL_USERNAME,
         pass: process.env.GMAIL_PASSWORD 
     }
   });
   const options = {
-      from: 'AVChamps.com',
+      from: 'hello@avchamps.com',
       to: email,
       subject: "Welcome to the AV CAMPS Community!",
         html: `

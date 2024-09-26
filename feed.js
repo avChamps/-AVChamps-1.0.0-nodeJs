@@ -166,16 +166,16 @@ router.post('/postEvent', (req,res) => {
 function sendMail(eventName, eventUrl, startDate, endDate,eventType) {
   console.log(eventName, eventUrl, startDate, endDate, eventType);
   const transporter = nm.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
+    host: "smtpout.secureserver.net",
+    port: 465,
+    secure: true,
       auth: {
         user: process.env.GMAIL_USERNAME,
         pass: process.env.GMAIL_PASSWORD 
     }
   });
   const options = {
-      from: 'AVChamps.com',
+      from: 'hello@avchamps.com',
       to: 'Avchamps1@gmail.com',
       subject: "Post Add Notification",
       html: `<h1>Hello, Somebody tried to Post Event</h1>
