@@ -5,18 +5,18 @@ const nm = require('nodemailer');
 const router = express.Router();
 const bodyParser = require('body-parser');
 const moment = require('moment');
+const cron = require('node-cron');
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
-router.get('/sendBirthdayMail', (req, res) => {
-    const sql = 'SELECT emailId, dob FROM signup_table';
+const BirthdayMail = ()  => {
+     const sql = 'SELECT emailId, dob FROM signup_table';
     
     db.query(sql, (err, result) => {
       if (err) {
-        return res.status(500).send({ status: false, message: err.message });
+        console.log('Error while sending Birthday wishes',err);
       }
       const today = moment().format('MM-DD');
       const birthdayRecords = result.filter(record => {
@@ -29,19 +29,11 @@ router.get('/sendBirthdayMail', (req, res) => {
 
       if (birthdayRecords.length > 0) {
         sendBirthdayMails(birthdayRecords);
-        return res.send({
-          status: true, 
-          records: birthdayRecords,
-          message: 'Birthday emails sent successfully'
-        });
       } else {
-        return res.send({
-          status: true, 
-          message: 'No birthdays today'
-        });
+        console.log('Failed to send the birthday wishes');
       }
     });
-});
+}
 
 function sendBirthdayMails(records) {
     const transporter = nm.createTransport({
@@ -59,8 +51,27 @@ function sendBirthdayMails(records) {
         from: 'hello@avchamps.com',
         to: record.emailId,
         subject: 'Happy Birthday!',
-        html: `<h1>Happy Birthday!</h1><p>We wish you all the best on your special day!</p>`
-      };
+        html: `<h1 style="font-family: cursive; color: #008b8b;">Happy Birthday!</h1>
+       <p style="font-family: cursive;font-size: 20px;">We wish you all the best on your special day!</p>
+       <p style="font-family: cursive;font-size: 20px;">Count your life by smiles, not tears. Count your age by friends, not years. Wishing you a year full of joy and unforgettable moments!</p>
+       <img src="https://images.wondershare.com/filmora/article-images/2021/happy-birthday-animated-gif-1.jpg" alt="Happy Birthday Image"/>
+       <p>Best Regards,<br>AV CHAMPS<br>
+            <a href="https://avchamps.com/">https://avchamps.com/</a></p>
+             <p>
+           <a href="https://www.facebook.com/people/AV-Champs/pfbid0UNunL8ku31fRE41hod6ivS5WVcDugsiFoDYU6JMtsZtGNfvSKhSTPNfix4rX4xUkl/" target="_blank" style="text-decoration: none;">
+           <img src="https://avchamps.com/assets/images/socialmediacons/facebook.png" alt="Facebook" width="30" height="30" style="margin-right: 10px;" />
+           </a>
+           <a href="https://x.com/rgbaudiovideo" target="_blank" style="text-decoration: none;">
+            <img src="https://avchamps.com/assets/images/socialmediacons/twitter.png" width="30" height="30" style="margin-right: 10px;" />
+          </a>
+           <a href="https://www.instagram.com/av.champs/" target="_blank" style="text-decoration: none;" >
+          <img src="https://avchamps.com/assets/images/socialmediacons/instagram.png" alt="Instagram" width="30" height="30" style="margin-right: 10px;" />
+          </a> 
+          <a href="https://www.linkedin.com/in/avchamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/linkedin.png" alt="LinkedIn" width="30" height="30" style="margin-right: 10px;" />
+          </a>    
+          </p>`
+      }
   
       transporter.sendMail(options, function (error, info) {
         if (error) {
@@ -71,5 +82,113 @@ function sendBirthdayMails(records) {
       });
     });
   }
+
+  const eventsMails = () => {
+    const today = moment().format('YYYY-MM-DD');
+    console.log('Today\'s date:', today);
+    
+    const sql = 'SELECT event_name, event_date FROM sample_events';
+    const singUpSQL = 'SELECT emailId FROM signup_table';
+    
+    db.query(sql,singUpSQL, (err, result) => {
+      if (err) {
+        console.log('Error while sending event notifications', err);
+      } else {
+        if (result.length > 0) {
+          let eventsToday = result.filter(event => event.event_date === today);
+          if (eventsToday.length > 0) {
+            console.log(eventsToday);
+            db.query(singUpSQL, (err, signUpResult) => {
+              if (err) {
+                console.log('Error while fetching sign-up data', err);
+              } else {
+                if (signUpResult.length > 0) {
+                  console.log("Sign-up Data: ", signUpResult);
+                  sendEventMail(eventsToday, signUpResult);
+                } else {
+                  console.log('No sign-ups found.');
+                }
+              }
+            });
+          }
+         else {
+            console.log('No events today.');
+          }
+        } else {
+          console.log('No events in the database.');
+        }
+      }
+    });
+  };
+  
+  
+
+  function sendEventMail(todayEvents,signUpResult) {
+    const transporter = nm.createTransport({
+      host: "smtpout.secureserver.net",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.GMAIL_USERNAME,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+  
+
+  console.log("Today's Events:", todayEvents);
+  todayEvents.forEach(event => console.log(event.event_name));
+
+  
+  const eventListHtml = todayEvents
+  .map(event => `<li>${event.event_name}</li>`)
+  .join('');
+
+  signUpResult.forEach(record => {
+      const options = {
+        from: 'hello@avchamps.com',
+        to: record.emailId,
+        subject: 'Today Events',
+        html: `
+        <p>Hello AVCHAMP,</p>
+        <p style="margin-top:6px">Below is the list of today's ongoing AV events. Please feel free to attend any event that is relevant to you</p>
+        <ul style="margin-top: 6px">${eventListHtml} </ul>
+        <p>visit : <a href = "https://avchamps.com">https://avchamps.com</a> -> SignIn -> Profile -> Tools -> Calender</p>
+         <p>Best Regards,<br>AV CHAMPS<br>
+            <a href="https://avchamps.com/">https://avchamps.com/</a></p>
+           <p>
+           <a href="https://www.facebook.com/people/AV-Champs/pfbid0UNunL8ku31fRE41hod6ivS5WVcDugsiFoDYU6JMtsZtGNfvSKhSTPNfix4rX4xUkl/" target="_blank" style="text-decoration: none;">
+           <img src="https://avchamps.com/assets/images/socialmediacons/facebook.png" alt="Facebook" width="30" height="30" style="margin-right: 10px;" />
+           </a>
+           <a href="https://x.com/rgbaudiovideo" target="_blank" style="text-decoration: none;">
+            <img src="https://avchamps.com/assets/images/socialmediacons/twitter.png" width="30" height="30" style="margin-right: 10px;" />
+          </a>
+           <a href="https://www.instagram.com/av.champs/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/instagram.png" alt="Instagram" width="30" height="30" style="margin-right: 10px;" />
+          </a> 
+          <a href="https://www.linkedin.com/in/avchamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/linkedin.png" alt="LinkedIn" width="30" height="30" style="margin-right: 10px;" />
+          </a>    
+          </p>`
+      }
+  
+      transporter.sendMail(options, function (error, info) {
+        if (error) {
+          console.log(`Error sending email to ${record.emailId}: `, error);
+        } else {
+          console.log(`Email sent to ${record.emailId}`);
+        }
+      });
+    });
+  }
+
+  cron.schedule('00 09 * * *', () => {
+    eventsMails();
+  })
+
+
+cron.schedule('00 00 * * *', () => {
+  BirthdayMail();
+});
   
   module.exports = router;
+

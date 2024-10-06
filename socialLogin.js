@@ -19,10 +19,10 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://localhost:4200/redirected-page';
-let googleRedirectUrl = 'http://localhost:3000/auth/google/callback';
-// let url = 'https://avchamps.com/redirected-page';
-// let googleRedirectUrl = 'https://avchamps.com/nodejs/auth/google/callback';
+// let url = 'http://localhost:4200/redirected-page';
+// let googleRedirectUrl = 'http://localhost:3000/auth/google/callback';
+let url = 'https://avchamps.com/redirected-page';
+let googleRedirectUrl = 'https://avchamps.com/nodejs/auth/google/callback';
 
 let linkedinRedirectUrl = 'https://avchamps.com/nodejs/auth/linkedin/callback';
 let facebookRedirectUrl = 'https://avchamps.com/auth/facebook/callback';
@@ -403,9 +403,22 @@ function sendMail(email) {
             </ol>
             <p>If you have any questions or need assistance, our support team is here to help. Feel free to reach out to us at <a href="mailto:hello@avchamps.com">hello@avchamps.com</a>.</p>
             <p>Once again, welcome to the AV CHAMPS Community. We are excited to have you with us and look forward to your active participation!</p>
-            <p>Best regards,</p>
-            <p>AV CHAMPS</p>
-            <p><a href="https://avchamps.com/">https://avchamps.com/</a></p>
+            <p>Best Regards,<br>AV CHAMPS<br>
+            <a href="https://avchamps.com/">https://avchamps.com/</a></p>
+             <p>
+           <a href="https://www.facebook.com/people/AV-Champs/pfbid0UNunL8ku31fRE41hod6ivS5WVcDugsiFoDYU6JMtsZtGNfvSKhSTPNfix4rX4xUkl/" target="_blank" style="text-decoration: none;">
+           <img src="https://avchamps.com/assets/images/socialmediacons/facebook.png" alt="Facebook" width="30" height="30" style="margin-right: 10px;" />
+           </a>
+           <a href="https://x.com/rgbaudiovideo" target="_blank" style="text-decoration: none;">
+            <img src="https://avchamps.com/assets/images/socialmediacons/twitter.png" width="30" height="30" style="margin-right: 10px;" />
+          </a>
+           <a href="https://www.instagram.com/av.champs/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/instagram.png" alt="Instagram" width="30" height="30" style="margin-right: 10px;" />
+          </a> 
+          <a href="https://www.linkedin.com/in/avchamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/linkedin.png" alt="LinkedIn" width="30" height="30" style="margin-right: 10px;" />
+          </a>    
+          </p> 
         `
   };
   transporter.sendMail(options, function (error, info) {

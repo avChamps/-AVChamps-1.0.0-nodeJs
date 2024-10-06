@@ -71,10 +71,10 @@ router.post('/insertProfile', upload.none(), (req, res) => {
 });
 
 router.post('/updateProfile', upload.none(), (req, res) => {
-  const {  emailId,mobileNumber,companyName, designation, dob, location, gender } = req.body;
+  const {  emailId,workingEmailId, mobileNumber,companyName, designation, dob, location, gender } = req.body;
   console.log(req.body);
   const updatedDate = new Date();
-  const data = { mobileNumber,companyName, designation, dob, location, gender,updatedDate };
+  const data = {workingEmailId,mobileNumber,companyName, designation, dob, location, gender,updatedDate };
   updateDatabase(res, 'signup_table', data, `emailId = '${emailId}'`);
 });
 
@@ -176,22 +176,22 @@ router.get('/getProfileWeight/:emailId', async (req, res) => {
   const emailId = req.params.emailId;
   // Define field weights for each table
   const userProfileWeights = {
-    imagePath: 16,
-    fullName: 7,
-    emailId: 7,
-    mobileNumber: 7,
-    dob: 7,
-    companyName : 7,
-    gender: 7,
-    designation: 7,
-    location: 7
+    fullName: 10,
+    emailId: 10,
+    workingEmailId : 10,
+    mobileNumber: 10,
+    dob: 10,
+    companyName : 10,
+    gender: 10,
+    designation: 10,
+    location: 10
   };
 
   const socialMediaProfileWeights = {
-    twitter: 7,
-    faceBook: 7,
-    instagram: 7,
-    linkedIn: 7
+    twitter: 5,
+    faceBook: 5,
+    instagram: 5,
+    linkedIn: 5
   };
 
   let totalWeight = 0;
