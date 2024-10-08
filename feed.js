@@ -15,8 +15,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const router = express.Router();
 
 router.post('/insertFeed', (req, res) => {
-  const { sender, title, description, link, dltFeedDate } = req.body;
+  const { sender, title, description, link } = req.body;
   const createdDate = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+  const dltFeedDate = moment(createdDate, 'YYYY-MM-DD').add(30, 'days').format('YYYY-MM-DD');
+
   const data = { sender, title, description, createdDate, link, dltFeedDate };
 
   const sql = 'INSERT INTO Community_Announcements SET ?';
@@ -196,12 +198,14 @@ function sendMail(eventName, eventUrl, startDate, endDate,eventType) {
 }
 
 const deleteExpiredRecords = () => {
-  const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
+  const currentDate = new Date().toISOString().slice(0, 10);
   console.log('Current Date:', currentDate);
   const deleteQueries = [
     `DELETE FROM Community_Announcements WHERE dltFeedDate <= '${currentDate}'`,
     `DELETE FROM sample_events WHERE dltFeedDate <= '${currentDate}'`,
-    `DELETE FROM tradeShow WHERE dltFeedDate <= '${currentDate}'`
+    `DELETE FROM tradeShow WHERE dltFeedDate <= '${currentDate}'`,
+    `DELETE FROM job_applications WHERE dltFeedDate <= '${currentDate}'`
+    `DELETE FROM seller_Info WHERE dltFeedDate <= '${currentDate}'`
   ];
   deleteQueries.forEach((deleteSql) => {
     db.query(deleteSql, (err, result) => {

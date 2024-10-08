@@ -1,4 +1,3 @@
-// index.js
 const express = require('express');
 const cors = require('cors');
 const db = require('./dbConnection');
@@ -17,7 +16,7 @@ const text_generator = require('./text_generator.js');
 const jobPortal = require('./jobs_portal.js');
 const mailService = require('./mail-services.js');
 const userPoints = require('./userPoints.js');
-
+console.log = () => {};
 
 const app = express();
 const port = 3000;

@@ -180,7 +180,9 @@ router.post('/insertCart', upload.single('image'), (req, res) => {
       console.log('Image uploaded successfully:', imageUrl);
       const imagePath = imageUrl;
       const postedDate = new Date();
-      const data = { emailId, title, description,productCategory, location, mobileNumber, price, postedDate, imagePath, userName };
+      const deletedDate = new Date(postedDate);
+      deletedDate.setDate(postedDate.getDate() + 30);
+      const data = { emailId, title, description,productCategory, location, mobileNumber, price, postedDate, imagePath, userName, deletedDate };
        console.log(data);
       const sql = 'INSERT INTO seller_Info SET ?';
     

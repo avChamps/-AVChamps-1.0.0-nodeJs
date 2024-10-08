@@ -176,7 +176,6 @@ router.get('/getProfileWeight/:emailId', async (req, res) => {
   const emailId = req.params.emailId;
   // Define field weights for each table
   const userProfileWeights = {
-    fullName: 10,
     emailId: 10,
     workingEmailId : 10,
     mobileNumber: 10,

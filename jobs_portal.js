@@ -160,9 +160,11 @@ router.post('/deleteJob', (req, res) => {
 
 router.post('/submitApplication', (req, res) => {
   const { job_role, company, location, jobType, minSalary, maxSalary, email, phone, companyUrl,postedBy } = req.body;
-
-  const sql = 'INSERT INTO job_applications (job_role, company, location, job_type, min_salary, max_salary, email, phone,companyUrl,postedBy) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?,?)';
-  const values = [job_role, company, location, jobType, minSalary, maxSalary, email, phone, companyUrl,postedBy];
+  const postedDate = new Date();
+  const deletedDate = new Date(postedDate);
+  deletedDate.setDate(postedDate.getDate() + 30);
+  const sql = 'INSERT INTO job_applications (job_role, company, location, job_type, min_salary, max_salary, email, phone,companyUrl,postedBy,deletedDate) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?,?,?)';
+  const values = [job_role, company, location, jobType, minSalary, maxSalary, email, phone, companyUrl,postedBy,deletedDate];
 
   db.query(sql, values, (err, result) => {
     if (err) {
@@ -171,28 +173,6 @@ router.post('/submitApplication', (req, res) => {
     }
     return res.json({ status: true, message: 'Job posted successfully' });
   });
-});
-
-
-const deleteExpiredRecords = () => {
-  const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
-  const deleteQueries = [
-    `DELETE FROM job_applications WHERE applied_at = '${currentDate}'`
-  ];
-  deleteQueries.forEach((deleteSql) => {
-    db.query(deleteSql, (err, result) => {
-      if (err) {
-        console.error('Error deleting expired records:', err);
-      } else {
-        console.log('Expired records deleted successfully from table:', deleteSql.split(' ')[2]);
-      }
-    });
-  });
-};
-
-// Schedule the task to run every day at midnight (00:00)
-cron.schedule('47 8 * * *', () => {
-  deleteExpiredRecords();
 });
 
 module.exports = router;
