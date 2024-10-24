@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 router.post('/insertProductReview', (req, res) => {
     const { emailId, productName, reviews, rating, displayUserName } = req.body;
   
-    const postedDate = new Date(); // Get the current date
+    const postedDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const data = { emailId, productName, reviews, rating, displayUserName, postedDate };
     
     console.log(data); 
@@ -97,7 +97,7 @@ router.post('/insertProductReview', (req, res) => {
   router.post('/insertProductFeedback', (req, res) => {
     const { emailId, productName, displayUserName,reviewNumber, likes,dislike } = req.body;
   
-    const postedDate = new Date(); // Get the current date
+    const postedDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const data = { emailId, productName, displayUserName, postedDate,reviewNumber, likes,dislike };
     
     console.log(data); 
