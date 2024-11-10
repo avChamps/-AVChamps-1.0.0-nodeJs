@@ -17,6 +17,7 @@ const jobPortal = require('./jobs_portal.js');
 const mailService = require('./mail-services.js');
 const userPoints = require('./userPoints.js');
 const productReview = require('./product_review.js');
+const quiz = require('./quiz.js');
 // console.log = () => {};
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/',jobPortal);
 app.use('/',mailService);
 app.use('/',userPoints);
 app.use('/', productReview);
+app.use('/',quiz);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

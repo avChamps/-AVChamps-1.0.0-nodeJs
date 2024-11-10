@@ -10,6 +10,24 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
+router.get('/getProducts', (req, res) => {
+  const sql = `SELECT * FROM products`;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).send({ status: false, message: err.message });
+    }
+
+    if (result.length === 0) {
+      const data = [{ "records": 0 }];
+      return res.send({ status: false, message: 'No records found', data: data });
+    }
+
+    return res.send({ status: true, message: 'Product ratings details retrieved successfully', data: result });
+  });
+});
+
 router.post('/insertProductReview', (req, res) => {
     const { emailId, productName, reviews, rating, displayUserName } = req.body;
   
