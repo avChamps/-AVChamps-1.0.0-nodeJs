@@ -8,16 +8,15 @@ const router = express.Router();
 
 function sendMail(personName, emailId, mobileNumber, subject, message) {
    console.log(personName, emailId, mobileNumber, subject, message);
-    const transporter = nm.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-            user: process.env.GMAIL_USERNAME,
-            pass: process.env.GMAIL_PASSWORD 
-        }
-    });
-
+   const transporter = nm.createTransport({
+    host: "smtpout.secureserver.net",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.GMAIL_USERNAME,
+      pass: process.env.GMAIL_PASSWORD,
+    },
+  });
    
     // Check for undefined values and provide default values if they are undefined
     const name = personName || 'Unknown';
@@ -27,7 +26,7 @@ function sendMail(personName, emailId, mobileNumber, subject, message) {
     const msg = message || 'No message';
 
     const options = {
-        from: 'AV-Project',
+        from: 'hello@avchamps.com',
         to: 'avchamps1@gmail.com',
         subject: `Contact Us Notification`,
         html: `<h1>Hello, Somebody tried to contact Us</h1>
