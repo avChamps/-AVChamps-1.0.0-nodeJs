@@ -71,10 +71,10 @@ router.post('/insertProfile', upload.none(), (req, res) => {
 });
 
 router.post('/updateProfile', upload.none(), (req, res) => {
-  const {  emailId,workingEmailId, mobileNumber,companyName, designation, dob, location, gender } = req.body;
-  console.log(req.body);
+  const {  emailId,workingEmailId, mobileNumber,companyName, designation, dob, location, gender, selectedCity , selectedCountry, selectedState , address1, address2,stdCode, zipCode} = req.body;
+   console.log(req.body);
   const updatedDate = new Date();
-  const data = {workingEmailId,mobileNumber,companyName, designation, dob, location, gender,updatedDate };
+  const data = {workingEmailId,mobileNumber,companyName, designation, dob, location, gender,updatedDate, selectedCity , selectedCountry, selectedState , address1, address2, stdCode, zipCode };
   updateDatabase(res, 'signup_table', data, `emailId = '${emailId}'`);
 });
 

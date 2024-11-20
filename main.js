@@ -18,6 +18,7 @@ const mailService = require('./mail-services.js');
 const userPoints = require('./userPoints.js');
 const productReview = require('./product_review.js');
 const quiz = require('./quiz.js');
+const stateCity = require('./state-city.js')
 // console.log = () => {};
 
 const app = express();
@@ -55,6 +56,7 @@ app.use('/',mailService);
 app.use('/',userPoints);
 app.use('/', productReview);
 app.use('/',quiz);
+app.use('/',stateCity);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
