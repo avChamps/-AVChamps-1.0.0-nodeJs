@@ -16,11 +16,12 @@ router.post('/getQuizQestions', (req, res) => {
     if (!emailId) {
         return res.status(400).send({ status: false, message: 'Email ID is required' });
     }
+
     const checkAnsweredQuery = `
         SELECT COUNT(*) AS answered_count
         FROM user_responses 
         WHERE emailId = ? 
-        AND DATE(posted_date) = CURDATE();  -- Check if user has answered questions today
+        AND DATE(posted_date) = CURDATE();
     `;
 
     db.query(checkAnsweredQuery, [emailId], (err, result) => {
@@ -30,7 +31,7 @@ router.post('/getQuizQestions', (req, res) => {
         }
 
         const answeredCount = result[0].answered_count;
-        const remainingQuestions = 5 - answeredCount; 
+        const remainingQuestions = 5 - answeredCount;
         if (remainingQuestions <= 0) {
             return res.send({
                 status: false,
@@ -38,30 +39,24 @@ router.post('/getQuizQestions', (req, res) => {
                 data: []
             });
         }
-        const sql = `
+
+        const fetchQuestionsQuery = `
             SELECT qq.*
             FROM quiz_questions qq
-            LEFT JOIN user_responses ur
-                ON qq.question_id = ur.question_id 
-                AND ur.emailId = ?
-                AND DATE(ur.posted_date) = CURDATE()  -- Check if user has already answered this question
-            WHERE ur.response_id IS NULL
-            ORDER BY RAND()  -- Randomize the selection
-            LIMIT ?;  -- Limit to the remaining unanswered questions
+            WHERE qq.question_id NOT IN (
+                SELECT question_id 
+                FROM user_responses 
+                WHERE emailId = ? 
+                AND DATE(posted_date) = CURDATE()
+            )
+            ORDER BY RAND()
+            LIMIT ?;
         `;
 
-        db.query(sql, [emailId, remainingQuestions], (err, result) => {
+        db.query(fetchQuestionsQuery, [emailId, remainingQuestions], (err, result) => {
             if (err) {
                 console.log("Database error:", err.message);
                 return res.status(500).send({ status: false, message: err.message });
-            }
-
-            if (result.length < remainingQuestions) {
-                return res.send({
-                    status: false,
-                    message: 'Not enough unanswered questions available today.',
-                    data: result 
-                });
             }
 
             return res.send({
@@ -72,6 +67,7 @@ router.post('/getQuizQestions', (req, res) => {
         });
     });
 });
+
 
 router.post('/getOverallCount', (req, res) => {
     const { emailId } = req.body;
@@ -114,7 +110,6 @@ router.post('/getOverallCount', (req, res) => {
     });
 });
 
-// Function to fetch random questions if the user has answered no questions yet
 function fetchQuestions(emailId, res) {
     const sql = `
         SELECT qq.*
@@ -141,11 +136,11 @@ router.post('/insertQuizOptions', (req, res) => {
     const { emailId, userName, question_id, is_correct } = req.body;
     const postedDate = new Date().toISOString().slice(0, 19).replace('T', ' '); // Getting current date-time
 
-    const data = { 
-        emailId, 
-        userName, 
-        question_id, 
-        is_correct, 
+    const data = {
+        emailId,
+        userName,
+        question_id,
+        is_correct,
         posted_date: postedDate  // Ensure you're storing the date of the response
     };
 
@@ -170,19 +165,19 @@ WHERE ur.is_correct = TRUE
 GROUP BY ur.emailId, ur.userName, st.imagePath
 ORDER BY correct_answers DESC
 LIMIT 5;`;
-  
+
     db.query(sql, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.status(500).send({ status: false, message: err.message });
-      }
-  
-      if (result.length === 0) {
-        const data = [{ "records": 0 }];
-        return res.send({ status: false, message: 'No records found', data: data });
-      }
-  
-      return res.send({ status: true, message: 'Product ratings details retrieved successfully', data: result });
+        if (err) {
+            console.log(err);
+            return res.status(500).send({ status: false, message: err.message });
+        }
+
+        if (result.length === 0) {
+            const data = [{ "records": 0 }];
+            return res.send({ status: false, message: 'No records found', data: data });
+        }
+
+        return res.send({ status: true, message: 'Product ratings details retrieved successfully', data: result });
     });
 });
 

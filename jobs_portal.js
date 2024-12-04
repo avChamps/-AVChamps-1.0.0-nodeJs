@@ -8,86 +8,90 @@ const cron = require('node-cron');
 app.use(cors());
 
 router.get('/getPostedJobs', (req, res) => {
-  const { limit = 5, offset = 0, searchQuery = '', location = '', jobType = '', postedBy = '' } = req.query;
+  const { limit = 10, offset = 0, searchQuery = '', location = '', jobType = '', postedDate = '', sortBy = '' } = req.query;
   let sql = 'SELECT * FROM job_applications';
   const queryParams = [];
+  let countSql = 'SELECT COUNT(*) AS totalRecords FROM job_applications';
+  const countQueryParams = [];
 
   // Start building the WHERE clause
   let conditions = [];
 
-  if (postedBy) {
-    conditions.push('postedBy = ?');
-    queryParams.push(postedBy);
+  if (postedDate) {
+    conditions.push('postedDate = ?');
+    queryParams.push(postedDate);
+    countQueryParams.push(postedDate);
   }
 
   if (searchQuery) {
-    conditions.push('(job_role LIKE ? OR company LIKE ? OR location LIKE ? OR job_type LIKE ? OR email LIKE ?)');
+    conditions.push('(jobRole LIKE ? OR location LIKE ? OR jobType LIKE ? OR email LIKE ?)');
     const searchWildcard = `%${searchQuery}%`;
-    queryParams.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard);
+    queryParams.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard);
+    countQueryParams.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard);
   }
 
   if (location) {
     conditions.push('location = ?');
     queryParams.push(location);
+    countQueryParams.push(location);
   }
 
   if (jobType) {
-    conditions.push('job_type = ?');
+    conditions.push('jobType = ?');
     queryParams.push(jobType);
+    countQueryParams.push(jobType);
   }
 
   // Append the conditions to the SQL query
   if (conditions.length > 0) {
     sql += ' WHERE ' + conditions.join(' AND ');
+    countSql += ' WHERE ' + conditions.join(' AND ');
   }
 
-  // Add the ORDER BY clause
-  sql += ' ORDER BY applied_at DESC';
+  // Add the ORDER BY clause based on sortBy
+  switch (sortBy.toLowerCase()) {
+    case 'newest':
+      sql += ' ORDER BY postedDate DESC';
+      break;
+    case 'oldest':
+      sql += ' ORDER BY postedDate ASC';
+      break;
+    case 'most relevant':
+      sql += ' ORDER BY relevanceScore DESC'; // Assuming relevanceScore exists
+      break;
+    default:
+      sql += ' ORDER BY postedDate DESC'; // Default to newest
+  }
 
   // Add the LIMIT and OFFSET clauses
   sql += ' LIMIT ? OFFSET ?';
   queryParams.push(parseInt(limit), parseInt(offset));
 
-  db.query(sql, queryParams, (err, results) => {
-    if (err) {
-      console.error('Error fetching records:', err);
-      res.status(500).json({ error: 'Error fetching records' });
+  // Execute the count query first
+  db.query(countSql, countQueryParams, (countErr, countResults) => {
+    if (countErr) {
+      console.error('Error fetching total records count:', countErr);
+
+      // Return 0 as totalRecords if there is an error
+      res.status(200).json({
+        status: true,
+        records: [],
+        totalRecords: 0,
+        message: 'Details Fetched Successfully (No records found)'
+      });
     } else {
-      console.log('Fetched records successfully');
+      const totalRecords = countResults.length > 0 ? countResults[0].totalRecords : 0;
 
-      const countSql = 'SELECT job_role, COUNT(*) as total FROM job_applications GROUP BY job_role';
-
-      db.query(countSql, (countErr, countResults) => {
-        if (countErr) {
-          console.error('Error fetching job roles count:', countErr);
-          res.status(500).json({ error: 'Error fetching job roles count' });
+      // Execute the main query for paginated results
+      db.query(sql, queryParams, (err, results) => {
+        if (err) {
+          console.error('Error fetching records:', err);
+          res.status(500).json({ error: 'Error fetching records' });
         } else {
-          console.log('Fetched job roles count successfully');
-
-          // Define a mapping of job roles to Font Awesome icon classes
-          const jobRoleIcons = {
-            live_events: 'fa-solid fa-calendar-alt',
-            installation_professionals: 'fa-solid fa-tools',
-            sales_marketing: 'fa-solid fa-chart-line',
-            project_engineer: 'fa-solid fa-project-diagram',
-            design_engineer: 'fa-solid fa-pencil-ruler',
-            cad_engineer: 'fa-solid fa-drafting-compass',
-            av_engineer: 'fa-solid fa-video',
-            others: 'fa-solid fa-ellipsis-h'
-          };
-
-          // Map over countResults and append the icon class
-          const jobRolesWithIcons = countResults.map(job => {
-            return {
-              ...job,
-              icon: jobRoleIcons[job.job_role] || 'fa-solid fa-question'
-            };
-          });
-
-          return res.json({
+          res.json({
             status: true,
             records: results,
-            jobRolesCount: jobRolesWithIcons,
+            totalRecords,
             message: 'Details Fetched Successfully'
           });
         }
@@ -96,83 +100,97 @@ router.get('/getPostedJobs', (req, res) => {
   });
 });
 
+
 router.post('/editJob', (req, res) => {
-  const {
-    job_role,
-    company,
-    jobType,
-    minSalary,
-    maxSalary,
-    location,
-    email,
-    phone,
-    companyUrl,
-    postedBy,
-    slNo
-  } = req.body;
+  const { id, email, ...data } = req.body; // Extract id, email, and postedDate from the payload
 
-  const sql = 'UPDATE job_applications SET job_role = ?, company = ?, job_type = ?, min_salary = ?, max_salary = ?, location = ?, email = ?, phone = ?, companyUrl = ?, applied_at = NOW()  WHERE postedBy = ? AND slNo = ?';
+  // Validation: Check if required fields are present
+  if (!id || !email) {
+    return res.status(400).json({
+      error: 'ID, and email are required to identify the job.'
+    });
+  }
 
-  const data = [
-    job_role,
-    company,
-    jobType,
-    minSalary,
-    maxSalary,
-    location,
-    email,
-    phone,
-    companyUrl,
-    postedBy,
-    slNo
-  ];
+  // Additional validation (if needed)
+  if (Object.keys(data).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
 
-  console.log(data);
-  db.query(sql, data, (err, result) => {
+  // Create the SET clause dynamically
+  const updates = Object.keys(data).map((key) => `${key} = ?`).join(', ');
+  const values = [...Object.values(data), id, email];
+
+  const sql = `UPDATE job_applications SET ${updates} WHERE id = ? AND email =?`;
+  db.query(sql, values, (err, result) => {
     if (err) {
-      console.error('Error updating job info:', err);
-      return res.status(500).json({ error: 'Error updating job info' });
+      console.error('Error updating data:', err);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    return res.json({ status: true, message: 'Details updated successfully' });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: 'No job application found with the provided ID, email, and postedDate'
+      });
+    }
+
+    return res.json({ status: true, message: 'Job application updated successfully' });
   });
 });
 
 router.post('/deleteJob', (req, res) => {
-  const { slNo, job_role, company } = req.body; // Access email from request body
+  const { id, email } = req.body; // Extract id and email from the payload
 
-  console.log('Request Body:', req.body);
+  // Validation: Check if required fields are present
+  if (!id || !email) {
+    return res.status(400).json({
+      error: 'ID and email are required to delete the job.'
+    });
+  }
 
-  const sql = 'DELETE FROM job_applications WHERE slNo = ? AND job_role = ? AND company = ?';
-
-  console.log('SQL Query:', sql);
-  console.log('Values:', [slNo, job_role, company]);
-
-  db.query(sql, [slNo, job_role, company], (err, result) => {
-    if (err) {
-      console.error('Error deleting records:', err);
-      res.status(500).json({ error: 'Error deleting records' });
-    } else {
-      const affectedRows = result ? result.affectedRows : 0;
-      res.json({ status: true, affectedRows, message: 'Post Deleted Successfully' });
-    }
-  });
-});
-
-router.post('/submitApplication', (req, res) => {
-  const { job_role, company, location, jobType, minSalary, maxSalary, email, phone, companyUrl,postedBy } = req.body;
-  const postedDate = new Date();
-  const deletedDate = new Date(postedDate);
-  deletedDate.setDate(postedDate.getDate() + 30);
-  const sql = 'INSERT INTO job_applications (job_role, company, location, job_type, min_salary, max_salary, email, phone,companyUrl,postedBy,deletedDate) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?,?,?)';
-  const values = [job_role, company, location, jobType, minSalary, maxSalary, email, phone, companyUrl,postedBy,deletedDate];
+  const sql = `DELETE FROM job_applications WHERE id = ? AND email = ?`;
+  const values = [id, email];
 
   db.query(sql, values, (err, result) => {
     if (err) {
-      console.error('Error inserting application:', err);
+      console.error('Error deleting data:', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: 'No job application found with the provided ID and email'
+      });
+    }
+
+    return res.json({ status: true, message: 'Job application deleted successfully' });
+  });
+});
+
+
+router.post('/submitApplication', (req, res) => {
+  const data = req.body;
+
+  const postedDate = new Date();
+  const deletedDate = new Date(postedDate);
+  deletedDate.setDate(postedDate.getDate() + 30);
+
+  data.postedDate = postedDate;
+  data.deletedDate = deletedDate;
+
+  const fields = Object.keys(data).join(', ');
+  const placeholders = Object.keys(data).map(() => '?').join(', ');
+  const values = Object.values(data);
+
+  const sql = `INSERT INTO job_applications (${fields}) VALUES (${placeholders})`;
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
     return res.json({ status: true, message: 'Job posted successfully' });
   });
 });
+
 
 module.exports = router;

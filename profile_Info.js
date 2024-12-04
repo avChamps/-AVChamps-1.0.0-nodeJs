@@ -57,7 +57,7 @@ router.get('/getSocialMediaProfile/:emailId', (req, res) => {
 
 router.get('/getProfileImage/:emailId', (req, res) => {
   const emailId = req.params.emailId;
-  const sql = 'SELECT imagePath FROM signup_table WHERE emailId = ?';
+  const sql = 'SELECT * FROM signup_table WHERE emailId = ?';
   console.log(sql);
   fetchFromDatabase(res, sql, emailId);
 });
