@@ -8,7 +8,7 @@ const cron = require('node-cron');
 app.use(cors());
 
 router.get('/getPostedJobs', (req, res) => {
-  const { limit = 10, offset = 0, searchQuery = '', location = '', jobType = '', postedDate = '', sortBy = '' } = req.query;
+  const { limit = 10, offset = 0, searchQuery = '', location = '', jobType = '', postedDate = '', sortBy = '',email = '' } = req.query;
   let sql = 'SELECT * FROM job_applications';
   const queryParams = [];
   let countSql = 'SELECT COUNT(*) AS totalRecords FROM job_applications';
@@ -40,6 +40,12 @@ router.get('/getPostedJobs', (req, res) => {
     conditions.push('jobType = ?');
     queryParams.push(jobType);
     countQueryParams.push(jobType);
+  }
+
+  if (email) {
+    conditions.push('email = ?');
+    queryParams.push(email);
+    countQueryParams.push(email);
   }
 
   // Append the conditions to the SQL query
@@ -139,7 +145,7 @@ router.post('/editJob', (req, res) => {
 
 router.post('/deleteJob', (req, res) => {
   const { id, email } = req.body; // Extract id and email from the payload
-
+  console.log(req.body)
   // Validation: Check if required fields are present
   if (!id || !email) {
     return res.status(400).json({
@@ -189,6 +195,21 @@ router.post('/submitApplication', (req, res) => {
     }
 
     return res.json({ status: true, message: 'Job posted successfully' });
+  });
+});
+
+
+
+cron.schedule('58 23 * * *', () => {
+  const currentDate = new Date();
+  const sql = `DELETE FROM job_applications WHERE deletedDate <= ?`;
+
+  db.query(sql, [currentDate], (err, result) => {
+    if (err) {
+      console.error('Error deleting expired job applications:', err);
+    } else {
+      console.log(`Deleted ${result.affectedRows} expired job applications.`);
+    }
   });
 });
 
