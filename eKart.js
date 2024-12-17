@@ -87,7 +87,7 @@ router.post('/soldOutProduct', (req, res) => {
 
 
 router.get('/getPostedproducts', (req, res) => {
-  const { limit = 10, offset = 0, searchQuery = '', location = '', category = '', postedDate = '', sortBy = '', emailId = '', title = '' } = req.query;
+  const { limit = 10, offset = 0, searchQuery = '', location = '', category = '', postedDate = '', sortBy = '', email = '', title = '' } = req.query;
   let sql = 'SELECT * FROM seller_Info';
   const queryParams = [];
   let countSql = 'SELECT COUNT(*) AS totalRecords FROM seller_Info';
@@ -121,10 +121,10 @@ router.get('/getPostedproducts', (req, res) => {
     countQueryParams.push(category);
   }
 
-  if (emailId) {
-    conditions.push('emailId = ?');
-    queryParams.push(emailId);
-    countQueryParams.push(emailId);
+  if (email) {
+    conditions.push('email = ?');
+    queryParams.push(email);
+    countQueryParams.push(email);
   }
 
   if (title) {
