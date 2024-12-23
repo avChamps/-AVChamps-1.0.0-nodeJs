@@ -5,181 +5,170 @@ const app = express();
 const multer = require('multer');
 const cors = require('cors');
 const router = express.Router()
+const moment = require('moment');
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
-router.post('/getQuizQestions', (req, res) => {
+router.post('/getQuizQuestions', async (req, res) => {
     const { emailId } = req.body;
 
     if (!emailId) {
-        return res.status(400).send({ status: false, message: 'Email ID is required' });
+        return res.status(400).json({ error: 'Email ID is required' });
     }
 
-    const checkAnsweredQuery = `
-        SELECT COUNT(*) AS answered_count
-        FROM user_responses 
-        WHERE emailId = ? 
-        AND DATE(posted_date) = CURDATE();
-    `;
+    try {
+        const todayDate = moment().format('YYYY-MM-DD');
 
-    db.query(checkAnsweredQuery, [emailId], (err, result) => {
-        if (err) {
-            console.log("Database error:", err.message);
-            return res.status(500).send({ status: false, message: err.message });
-        }
+        // Fetch the count of questions answered today
+        const answeredQuestionsCountQuery = `
+            SELECT COUNT(*) AS answeredCount
+            FROM user_responses
+            WHERE emailId = ? AND posted_date = ?`;
 
-        const answeredCount = result[0].answered_count;
-        const remainingQuestions = 5 - answeredCount;
-        if (remainingQuestions <= 0) {
-            return res.send({
-                status: false,
-                message: 'You have already answered 5 questions today. Come back tomorrow!',
-                data: []
+        const answeredCount = await new Promise((resolve, reject) => {
+            db.query(answeredQuestionsCountQuery, [emailId, todayDate], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]?.answeredCount || 0);
+            });
+        });
+
+        console.log("Questions answered today:", answeredCount);
+
+        // If 5 or more questions have already been answered, do not fetch new questions
+        if (answeredCount >= 5) {
+            return res.json({
+                message: 'You have already attempted 5 questions for today. Please come back tomorrow!'
             });
         }
 
-        const fetchQuestionsQuery = `
-            SELECT qq.*
-            FROM quiz_questions qq
-            WHERE qq.question_id NOT IN (
-                SELECT question_id 
-                FROM user_responses 
-                WHERE emailId = ? 
-                AND DATE(posted_date) = CURDATE()
-            )
+        // Fetch IDs of questions already answered today
+        const answeredQuestionsQuery = `
+            SELECT question_id
+            FROM user_responses
+            WHERE emailId = ? AND posted_date = ?`;
+
+        const answeredQuestionsToday = await new Promise((resolve, reject) => {
+            db.query(answeredQuestionsQuery, [emailId, todayDate], (err, results) => {
+                if (err) return reject(err);
+                resolve(results.map(row => row.question_id));
+            });
+        });
+
+        // Fetch remaining questions up to the limit of 5
+        const remainingQuestionsQuery = `
+            SELECT question_id, question_text, option_a, option_b, option_c, option_d,correct_answer
+            FROM quiz_questions
+            WHERE question_id NOT IN (?) 
             ORDER BY RAND()
-            LIMIT ?;
-        `;
+            LIMIT ?`;
 
-        db.query(fetchQuestionsQuery, [emailId, remainingQuestions], (err, result) => {
-            if (err) {
-                console.log("Database error:", err.message);
-                return res.status(500).send({ status: false, message: err.message });
-            }
-
-            return res.send({
-                status: true,
-                message: 'Quiz questions retrieved successfully',
-                data: result
-            });
+        const remainingQuestions = await new Promise((resolve, reject) => {
+            db.query(
+                remainingQuestionsQuery,
+                [answeredQuestionsToday.length > 0 ? answeredQuestionsToday : [0], 5 - answeredCount],
+                (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                }
+            );
         });
-    });
+
+        res.json({ questions: remainingQuestions });
+    } catch (error) {
+        console.error('Error fetching quiz questions:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 
-router.post('/getOverallCount', (req, res) => {
+router.get('/getTopScores', async (req, res) => {
+    try {
+        const topScoresQuery = `
+            SELECT  userName, COUNT(is_correct) AS score
+            FROM user_responses
+            WHERE is_correct = 1
+            GROUP BY emailId, userName
+            ORDER BY score DESC
+            LIMIT 5`;
+
+        const topScores = await new Promise((resolve, reject) => {
+            db.query(topScoresQuery, (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        res.json({ topScores });
+    } catch (error) {
+        console.error('Error fetching top scores:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+router.post('/getQuizStats', async (req, res) => {
     const { emailId } = req.body;
 
     if (!emailId) {
-        return res.status(400).send({ status: false, message: 'Email ID is required' });
+        return res.status(400).json({ error: 'Email ID is required' });
     }
 
-    const sql = `
-        SELECT 
-            emailId,
-            userName,
-            COUNT(*) AS total_responses,
-            SUM(CASE WHEN is_correct = TRUE THEN 1 ELSE 0 END) AS correct_answers,
-            SUM(CASE WHEN is_correct = FALSE THEN 1 ELSE 0 END) AS wrong_answers
-        FROM user_responses
-        WHERE emailId = ?
-        GROUP BY emailId, userName;
-    `;
+    try {
+        const statsQuery = `
+            SELECT 
+                SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) AS correct_answers,
+                SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) AS wrong_answers,
+                COUNT(*) AS total_answers,
+                ROUND(SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS correct_percentage,
+                ROUND(SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS wrong_percentage
+            FROM 
+                user_responses
+            WHERE 
+                emailId = ?`;
 
-    db.query(sql, [emailId], (err, result) => {
-        if (err) {
-            console.log("Database error:", err.message);
-            return res.status(500).send({ status: false, message: err.message });
-        }
-
-        if (result.length === 0) {
-            return res.send({
-                status: false,
-                message: 'No data found for the provided emailId.',
-                data: []
+        const stats = await new Promise((resolve, reject) => {
+            db.query(statsQuery, [emailId], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]);
             });
-        }
-
-        return res.send({
-            status: true,
-            message: 'Quiz answers retrieved successfully',
-            data: result
         });
-    });
+
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching quiz stats:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
-function fetchQuestions(emailId, res) {
-    const sql = `
-        SELECT qq.*
-        FROM quiz_questions qq
-        ORDER BY RAND()
-        LIMIT 5;
-    `;
 
-    db.query(sql, [emailId], (err, result) => {
-        if (err) {
-            console.log("Database error:", err.message);
-            return res.status(500).send({ status: false, message: err.message });
-        }
-
-        return res.send({
-            status: true,
-            message: 'Quiz questions retrieved successfully',
-            data: result
-        });
-    });
-}
-
-router.post('/insertQuizOptions', (req, res) => {
+router.post('/submitResponse', async (req, res) => {
     const { emailId, userName, question_id, is_correct } = req.body;
-    const postedDate = new Date().toISOString().slice(0, 19).replace('T', ' '); // Getting current date-time
 
-    const data = {
-        emailId,
-        userName,
-        question_id,
-        is_correct,
-        posted_date: postedDate  // Ensure you're storing the date of the response
-    };
+    if (!emailId || !userName || !question_id || typeof is_correct !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid data' });
+    }
 
-    const sql = 'INSERT INTO user_responses SET ?';
-    db.query(sql, data, (err, result) => {
-        if (err) {
-            console.error('Error inserting quiz options:', err);
-            return res.status(500).json({ error: 'Error inserting quiz options' });
-        }
-        return res.json({ status: true, message: 'Quiz options posted successfully' });
-    });
+    try {
+        const posted_date = moment().format('YYYY-MM-DD');
+        const query = `
+            INSERT INTO user_responses (emailId, userName, question_id, is_correct, posted_date) 
+            VALUES (?, ?, ?, ?, ?)`;
+
+        await new Promise((resolve, reject) => {
+            db.query(query, [emailId, userName, question_id, is_correct, posted_date], (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        res.json({ message: 'Response recorded successfully' });
+    } catch (error) {
+        console.error('Error saving user response:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
-router.get('/getTopScores', (req, res) => {
-    const sql = `SELECT ur.emailId, 
-       ur.userName, 
-       st.imagePath, 
-       COUNT(*) AS correct_answers
-FROM user_responses ur
-JOIN signup_table st ON ur.emailId = st.emailId
-WHERE ur.is_correct = TRUE
-GROUP BY ur.emailId, ur.userName, st.imagePath
-ORDER BY correct_answers DESC
-LIMIT 5;`;
-
-    db.query(sql, (err, result) => {
-        if (err) {
-            console.log(err);
-            return res.status(500).send({ status: false, message: err.message });
-        }
-
-        if (result.length === 0) {
-            const data = [{ "records": 0 }];
-            return res.send({ status: false, message: 'No records found', data: data });
-        }
-
-        return res.send({ status: true, message: 'Product ratings details retrieved successfully', data: result });
-    });
-});
 
 module.exports = router;
 

@@ -200,26 +200,47 @@ function sendMail(eventName, eventUrl, startDate, endDate,eventType) {
 const deleteExpiredRecords = () => {
   const currentDate = new Date().toISOString().slice(0, 10);
   console.log('Current Date:', currentDate);
+
+  const disableSafeUpdates = `SET SQL_SAFE_UPDATES = 0;`;
+  const enableSafeUpdates = `SET SQL_SAFE_UPDATES = 1;`;
+
   const deleteQueries = [
     `DELETE FROM Community_Announcements WHERE dltFeedDate <= '${currentDate}'`,
     `DELETE FROM sample_events WHERE dltFeedDate <= '${currentDate}'`,
     `DELETE FROM tradeShow WHERE dltFeedDate <= '${currentDate}'`,
-    `DELETE FROM job_applications WHERE dltFeedDate <= '${currentDate}'`
-    `DELETE FROM seller_Info WHERE dltFeedDate <= '${currentDate}'`
+    `DELETE FROM job_applications WHERE deletedDate <= '${currentDate}'`,
+    `DELETE FROM seller_Info WHERE deletedDate <= '${currentDate}'`
   ];
-  deleteQueries.forEach((deleteSql) => {
-    db.query(deleteSql, (err, result) => {
+
+  db.query(disableSafeUpdates, (err) => {
+    if (err) {
+      console.error('Error disabling SQL_SAFE_UPDATES:', err);
+      return;
+    }
+
+    console.log('SQL_SAFE_UPDATES disabled.');
+    deleteQueries.forEach((deleteSql) => {
+      db.query(deleteSql, (err, result) => {
+        if (err) {
+          console.error('Error deleting expired records:', err);
+        } else {
+          console.log(`Expired records deleted successfully from table: ${deleteSql.split(' ')[2]}, Rows affected: ${result.affectedRows}`);
+        }
+      });
+    });
+
+    db.query(enableSafeUpdates, (err) => {
       if (err) {
-        console.error('Error deleting expired records:', err);
+        console.error('Error re-enabling SQL_SAFE_UPDATES:', err);
       } else {
-        console.log('Expired records deleted successfully from table:', deleteSql.split(' ')[2]);
+        console.log('SQL_SAFE_UPDATES enabled.');
       }
     });
   });
 };
 
-// Schedule the task to run every day at midnight (00:00)
-cron.schedule('55 23 * * *', () => {
+
+cron.schedule('58 23 * * *', () => {
   deleteExpiredRecords();
 });
 
