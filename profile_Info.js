@@ -48,12 +48,12 @@ router.get('/getProfile', (req, res) => {
 
 
 
-router.get('/getSocialMediaProfile/:emailId', (req, res) => {
-  const emailId = req.params.emailId;
-  const sql = 'SELECT * FROM socialMediaPofile WHERE emailId = ?';
-  console.log(sql);
-  fetchFromDatabase(res, sql, emailId);
-});
+// router.get('/getSocialMediaProfile/:emailId', (req, res) => {
+//   const emailId = req.params.emailId;
+//   const sql = 'SELECT * FROM socialMediaPofile WHERE emailId = ?';
+//   console.log(sql);
+//   fetchFromDatabase(res, sql, emailId);
+// });
 
 router.get('/getProfileImage/:emailId', (req, res) => {
   const emailId = req.params.emailId;

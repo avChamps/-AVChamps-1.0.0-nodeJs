@@ -74,7 +74,6 @@ router.post('/login', (req, res) => {
   })
 })
 
-
 router.get('/getLoginData/:emailId', (req, res) => {
   const emailId = req.params.emailId; // Access emailId from URL parameter
 
@@ -89,6 +88,38 @@ router.get('/getLoginData/:emailId', (req, res) => {
       console.log('Fetched records successfully');
       return res.send({ status: true, records: results, message: 'Details Fetched Successfully' });
     }
+  });
+});
+
+router.get('/getSocialMediaProfile/:fullName', (req, res) => {
+  const fullName = req.params.fullName; // Access fullName from URL parameter
+
+  // Step 1: Fetch emailId from signup table using fullName
+  const fetchEmailQuery = 'SELECT emailId FROM signup_table WHERE fullName = ?';
+  db.query(fetchEmailQuery, [fullName], (err, emailResults) => {
+    if (err) {
+      console.error('Error fetching emailId:', err);
+      return res.status(500).json({ error: 'Error fetching emailId' });
+    }
+
+    if (emailResults.length === 0) {
+      // If no emailId is found
+      return res.status(404).json({ status: false, message: 'No user found with the given fullName' });
+    }
+
+    const emailId = emailResults[0].emailId; // Get the emailId from the results
+
+    // Step 2: Fetch social media profile using the emailId
+    const fetchProfileQuery = 'SELECT * FROM socialMediaPofile WHERE emailId = ?';
+    db.query(fetchProfileQuery, [emailId], (err, profileResults) => {
+      if (err) {
+        console.error('Error fetching social media profile:', err);
+        return res.status(500).json({ error: 'Error fetching social media profile' });
+      }
+
+      console.log('Fetched social media profile successfully');
+      return res.send({ status: true, records: profileResults, message: 'Details Fetched Successfully' });
+    });
   });
 });
 

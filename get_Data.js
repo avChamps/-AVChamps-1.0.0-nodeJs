@@ -12,7 +12,7 @@ router.get('/getLoginData', (req, res) => {
 
   // Base query for counting total records
   let countSql = `SELECT COUNT(*) as totalCount FROM signup_table`;
-  let dataSql = `SELECT fullName,designation,companyName FROM signup_table`;
+  let dataSql = `SELECT fullName,designation,companyName,imagePath,slNo FROM signup_table`;
   const values = [];
 
   if (searchTerm) {
