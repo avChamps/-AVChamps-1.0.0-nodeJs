@@ -49,19 +49,19 @@ function sendMail(personName, emailId, mobileNumber, subject, message) {
 
 function newsLettersendMail( emailId, requestedDate) {
     const transporter = nm.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
+        host: "smtpout.secureserver.net",
+        port: 465,
+        secure: true,
         auth: {
-            user: process.env.GMAIL_USERNAME,
-            pass: process.env.GMAIL_PASSWORD 
-        }
-    });
+          user: process.env.GMAIL_USERNAME,
+          pass: process.env.GMAIL_PASSWORD,
+        },
+      });
    
     const email = emailId || 'Unknown';
 
     const options = {
-        from: 'AV-Project',
+        from: 'hello@avchamps.com',
         to: 'avchamps1@gmail.com',
         subject: `News Letter Subscription`,
         html: `<h1>Hello, Somebody tried to contact Us</h1>
@@ -108,7 +108,7 @@ router.post('/newsLetter', (req, res) => {
             console.log(err)
             return res.send({ status: false, message: 'Failed to Submit' });
         } else {
-            return res.send({ status: true, message: 'News Letter Subscription Successfull' });
+            return res.send({ status: true, message: 'Thank you for subscribing to our newsletter!' });
         }
     });
 });
