@@ -12,18 +12,21 @@ router.get('/getLoginData', (req, res) => {
 
   // Base query for counting total records
   let countSql = `SELECT COUNT(*) as totalCount FROM signup_table`;
-  let dataSql = `SELECT fullName,designation,companyName,imagePath,slNo FROM signup_table`;
+  let dataSql = `SELECT fullName, designation, companyName, imagePath, slNo FROM signup_table`;
   const values = [];
+  const searchValues = [];
 
   if (searchTerm) {
     const searchPattern = `%${searchTerm}%`;
-    countSql += ` WHERE fullName LIKE ? OR companyName LIKE ?`;
-    dataSql += ` WHERE fullName LIKE ? OR companyName LIKE ?`;
-    values.push(searchPattern, searchPattern);
+    countSql += ` WHERE fullName LIKE ? OR companyName LIKE ? OR designation LIKE ?`;
+    dataSql += ` WHERE fullName LIKE ? OR companyName LIKE ? OR designation LIKE ?`;
+    searchValues.push(searchPattern, searchPattern, searchPattern);
   }
 
   dataSql += ` LIMIT ?, ?`;
-  values.push(offset, pageSize);
+
+  // Add search values first, then pagination values
+  values.push(...searchValues, offset, pageSize);
 
   // Function to handle SQL queries
   function handleQuery(sql, values, res, callback) {
@@ -36,7 +39,7 @@ router.get('/getLoginData', (req, res) => {
   }
 
   // Get total count
-  handleQuery(countSql, values.slice(0, values.length - 2), res, (countResults) => {
+  handleQuery(countSql, searchValues, res, (countResults) => {
     const totalCount = countResults[0].totalCount;
 
     // Get paginated data
@@ -48,6 +51,7 @@ router.get('/getLoginData', (req, res) => {
     });
   });
 });
+
 
 router.get('/loginInfo', (req, res) => {
   const sql = 'SELECT * FROM login_Logs';
