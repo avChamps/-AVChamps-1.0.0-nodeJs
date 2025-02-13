@@ -6,10 +6,20 @@ const router = express.Router();
 const bodyParser = require('body-parser');
 const moment = require('moment');
 const cron = require('node-cron');
+const multer = require('multer');
+
+// Multer Configuration for Handling File Uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+
+
 
 const app = express();
+process.env.TZ = 'Asia/Kolkata';
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 
 const BirthdayMail = ()  => {
      const sql = 'SELECT emailId, dob FROM signup_table';
@@ -69,7 +79,10 @@ function sendBirthdayMails(records) {
           </a> 
           <a href="https://www.linkedin.com/in/avchamps/" target="_blank" style="text-decoration: none;">
           <img src="https://avchamps.com/assets/images/socialmediacons/linkedin.png" alt="LinkedIn" width="30" height="30" style="margin-right: 10px;" />
-          </a>    
+          </a>   
+          <a href="https://www.youtube.com/@AVChamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/youtube.png" alt="youtube" width="30" height="30" style="margin-right: 10px;" />
+          </a>   
           </p>`
       }
   
@@ -168,6 +181,9 @@ function sendBirthdayMails(records) {
           <a href="https://www.linkedin.com/in/avchamps/" target="_blank" style="text-decoration: none;">
           <img src="https://avchamps.com/assets/images/socialmediacons/linkedin.png" alt="LinkedIn" width="30" height="30" style="margin-right: 10px;" />
           </a>    
+              <a href="https://www.youtube.com/@AVChamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/youtube.png" alt="youtube" width="30" height="30" style="margin-right: 10px;" />
+          </a>  
           </p>`
       }
   
@@ -181,10 +197,93 @@ function sendBirthdayMails(records) {
     });
   }
 
+
+
+  router.post('/sendDashboardMail', upload.array('attachments[]'), (req, res) => {
+    const { subject, message } = req.body;
+    console.log('Received Data:', req.body);
+    console.log('Attachments:', req.files);  // Debugging
+
+    if (!subject || !message) {
+        return res.status(400).json({ error: 'Subject and message are required' });
+    }
+
+    const singUpSQL = 'SELECT emailId FROM signup_table';
+
+    db.query(singUpSQL, (err, result) => {
+        if (err) {
+            console.log('Error fetching email recipients:', err);
+            return res.status(500).json({ error: 'Failed to fetch recipients' });
+        }
+
+        if (result.length === 0) {
+            return res.status(400).json({ message: 'No recipients found' });
+        }
+
+        const recipients = result.map(record => record.emailId);
+        sendDashboardMail(["disendra889@gmail.com", "harishnelluru@gmail.com"], subject, message, req.files);
+        res.json({ message: 'Emails are being sent.' });
+    });
+});
+
+
+function sendDashboardMail(recipients, subject, message, attachments) {
+  const transporter = nm.createTransport({
+      host: "smtpout.secureserver.net",
+      port: 465,
+      secure: true,
+      auth: {
+          user: process.env.GMAIL_USERNAME,
+          pass: process.env.GMAIL_PASSWORD,
+      },
+  });
+
+  recipients.forEach(email => {
+      let mailOptions = {
+          from: 'hello@avchamps.com',
+          to: email,
+          subject: subject,
+          html: `<p>Hello AVCHAMP,</p><p>${message}</p>
+             <p>Best Regards,<br>AV CHAMPS<br>
+            <a href="https://avchamps.com/">https://avchamps.com/</a></p>
+           <p>
+           <a href="https://www.facebook.com/people/AV-Champs/pfbid0UNunL8ku31fRE41hod6ivS5WVcDugsiFoDYU6JMtsZtGNfvSKhSTPNfix4rX4xUkl/" target="_blank" style="text-decoration: none;">
+           <img src="https://avchamps.com/assets/images/socialmediacons/facebook.png" alt="Facebook" width="30" height="30" style="margin-right: 10px;" />
+           </a>
+           <a href="https://x.com/rgbaudiovideo" target="_blank" style="text-decoration: none;">
+            <img src="https://avchamps.com/assets/images/socialmediacons/twitter.png" width="30" height="30" style="margin-right: 10px;" />
+          </a>
+           <a href="https://www.instagram.com/av.champs/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/instagram.png" alt="Instagram" width="30" height="30" style="margin-right: 10px;" />
+          </a> 
+          <a href="https://www.linkedin.com/in/avchamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/linkedin.png" alt="LinkedIn" width="30" height="30" style="margin-right: 10px;" />
+          </a> 
+            <a href="https://www.youtube.com/@AVChamps/" target="_blank" style="text-decoration: none;">
+          <img src="https://avchamps.com/assets/images/socialmediacons/youtube.png" alt="youtube" width="30" height="30" style="margin-right: 10px;" />
+          </a>    
+          </p>`,
+          attachments: attachments ? attachments.map(file => ({
+              filename: file.originalname,
+              content: file.buffer
+          })) : []
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+              console.log(`Error sending email to ${email}: `, error);
+          } else {
+              console.log(`Email sent to ${email}`);
+          }
+      });
+  });
+}
+
   cron.schedule('00 09 * * *', () => {
     eventsMails();
   })
 
+  
 
 cron.schedule('00 00 * * *', () => {
   BirthdayMail();

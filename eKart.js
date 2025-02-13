@@ -15,7 +15,8 @@ AWS.config.update({
   accessKeyId: 'KJ9SPRHRL34JNQBWXC34',
   secretAccessKey: 'OBUzDlDHxL0aV3G8mGXDVGaGC65r3h9HQlbADGR9',
   region: 'us-east-1',
-  endpoint: 'https://cellar-c2.services.clever-cloud.com'
+  endpoint: 'https://cellar-c2.services.clever-cloud.com',
+  correctClockSkew: true 
 });
 
 // Create an S3 instance
