@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const router = express.Router();
 
-function sendMail({ fullName, mobileNumber, location, working, training, createdDate }) {
+function sendMail({ fullName, mobileNumber, location, working, training, createdDate,courseType }) {
     const transporter = nm.createTransport({
         host: 'smtpout.secureserver.net',
         port: 465,
@@ -28,6 +28,7 @@ function sendMail({ fullName, mobileNumber, location, working, training, created
             <p><strong>Location:</strong> ${location}</p>
             <p><strong>Working:</strong> ${working}</p>
             <p><strong>Training:</strong> ${training}</p>
+             <p><strong>Course Name:</strong> ${courseType}</p>
             <p><strong>Created Date:</strong> ${createdDate}</p>
         `
     };
@@ -45,17 +46,17 @@ function sendMail({ fullName, mobileNumber, location, working, training, created
 router.post('/insertTraining', (req, res) => {
     console.log(req.body);
 
-    const { fullName, mobileNumber, location, working, training } = req.body;
+    const { fullName, mobileNumber, location, working, training,courseType } = req.body;
     const createdDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    if (!fullName || !mobileNumber || !location || !working || !training) {
+    if (!fullName || !mobileNumber || !location || !working || !training || !courseType) {
         return res.send({ status: false, message: 'All fields are required.' });
     }
 
-    const sql = `INSERT INTO trainings (fullName, mobileNumber, location, working, training, createdDate) 
-                 VALUES (?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO trainings (fullName, mobileNumber, location, working, training, createdDate, courseType) 
+                 VALUES (?, ?, ?, ?, ?, ?,?)`;
 
-    const values = [fullName, mobileNumber, location, working, training, createdDate];
+    const values = [fullName, mobileNumber, location, working, training, createdDate,courseType];
 
     db.query(sql, values, (err, result) => {
         if (err) {
@@ -69,7 +70,8 @@ router.post('/insertTraining', (req, res) => {
                 location,
                 working,
                 training,
-                createdDate
+                createdDate,
+                courseType
             });
             return res.send({ status: true, message: 'Thank you for registering for the course! Our team will be in touch with you shortly to provide further details. We’re excited to have you on board!.' });
         }

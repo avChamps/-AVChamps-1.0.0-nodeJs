@@ -165,7 +165,7 @@ function sendBirthdayMails(records) {
         <p>Hello AVCHAMP,</p>
         <p style="margin-top:6px">Below is the list of today's ongoing AV events. Please feel free to attend any event that is relevant to you</p>
         <ul style="margin-top: 6px">${eventListHtml} </ul>
-        <p>visit : <a href = "https://avchamps.com">https://avchamps.com</a> -> SignIn -> Profile -> Tools -> Calender</p>
+        <p>visit : <a href = "https://avchamps.com">https://avchamps.com</a> -> SignIn -> Profile -> Tools -> Calendar</p>
          <p>Best Regards,<br>AV CHAMPS<br>
             <a href="https://avchamps.com/">https://avchamps.com/</a></p>
            <p>
@@ -243,7 +243,7 @@ function sendDashboardMail(recipients, subject, message, attachments) {
           from: 'hello@avchamps.com',
           to: email,
           subject: subject,
-          html: `<p>Hello AVCHAMP,</p><p>${message}</p>
+          html: `<p>Hello AV CHAMP,</p><p>${message}</p>
              <p>Best Regards,<br>AV CHAMPS<br>
             <a href="https://avchamps.com/">https://avchamps.com/</a></p>
            <p>

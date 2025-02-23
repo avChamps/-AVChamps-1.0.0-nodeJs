@@ -28,6 +28,28 @@ router.get('/getAllUsers', async (req, res) => {
   });
   
 
+  router.get('/getTraining', async (req, res) => {
+    try {
+      const users = await new Promise((resolve, reject) => {
+        db.query('SELECT * FROM trainings', (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      });
+  
+      res.json({
+        count: users.length,
+        Data: users 
+      });
+    } catch (error) {
+      console.error('Error fetching all trainings:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
+
+
     router.get('/getUsersData', async (req, res) => {
         const userProfileWeights = {
           emailId: 10,
