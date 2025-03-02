@@ -73,7 +73,7 @@ router.post('/insertTraining', (req, res) => {
                 createdDate,
                 courseType
             });
-            return res.send({ status: true, message: 'Thank you for registering for the course! Our team will be in touch with you shortly to provide further details. We’re excited to have you on board!.' });
+            return res.send({ status: true, message: 'Thank you for registering for the course! Our team will be in touch with you shortly to provide further details. We are excited to have you on board!.' });
         }
     });
 });

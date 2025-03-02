@@ -49,12 +49,43 @@ router.get('/getFeedData', (req, res) => {
   });
 });
 
-router.get('/getEvents', (req, res) => {
-  const sql = 'SELECT * from sample_events order BY event_date ASC; ';
+router.post('/getEvents', (req, res) => {
+  const { eventType, date, month } = req.body; // Added date and month parameters
+  let sql = 'SELECT * FROM sample_events';
+  const values = [];
+  let conditions = [];
 
-  db.query(sql, (err, result) => {
+  // Event Type filter
+  if (eventType) {
+    conditions.push('eventType = ?');
+    values.push(eventType);
+  }
+
+  // Date filter for today
+  if (date) {
+    conditions.push('DATE(event_date) = ?');
+    values.push(date);
+  }
+
+  // Month filter
+  if (month) {
+    conditions.push('MONTH(event_date) = ?');
+    values.push(month);
+  }
+
+  // Combine conditions if any exist
+  if (conditions.length > 0) {
+    sql += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  sql += ' ORDER BY event_date ASC';
+
+  db.query(sql, values, (err, result) => {
     if (err) {
-      return res.status(500).send({ status: false, message: err.message });
+      return res.status(500).send({ 
+        status: false, 
+        message: err.message 
+      });
     } else {
       return res.send({
         status: true,
@@ -63,7 +94,8 @@ router.get('/getEvents', (req, res) => {
       });
     }
   });
-}); 
+});
+
 
 router.post('/insertEvent', (req, res) => {
   const { event_name, event_date, eventType, eventEndDate, website_Url, dltFeedDate } = req.body;
