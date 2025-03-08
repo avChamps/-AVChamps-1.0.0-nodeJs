@@ -22,6 +22,8 @@
     "node-fetch2": "^1.6.3",
     "nodemailer": "^6.9.13",
     "passport": "^0.7.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0",
     "xlsx": "^0.18.5"
   },
   "scripts": {

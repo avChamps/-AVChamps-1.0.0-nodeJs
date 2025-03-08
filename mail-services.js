@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const moment = require('moment');
 const cron = require('node-cron');
 const multer = require('multer');
+const { sendWhatsAppMessage } = require('./whasapp');
 
 // Multer Configuration for Handling File Uploads
 const storage = multer.memoryStorage();
@@ -117,6 +118,7 @@ function sendBirthdayMails(records) {
               } else {
                 if (signUpResult.length > 0) {
                   console.log("Sign-up Data: ", signUpResult);
+                  // sendWhatsAppMessage(eventsToday);
                   sendEventMail(eventsToday, signUpResult);
                 } else {
                   console.log('No sign-ups found.');
@@ -160,10 +162,10 @@ function sendBirthdayMails(records) {
       const options = {
         from: 'hello@avchamps.com',
         to: record.emailId,
-        subject: 'Today Events',
+        subject: "AV Events & Training - Today's Schedule",
         html: `
         <p>Hello AVCHAMP,</p>
-        <p style="margin-top:6px">Below is the list of today's ongoing AV events. Please feel free to attend any event that is relevant to you</p>
+        <p style="margin-top:6px">Below is the list of today's ongoing AV events, webinars, and training sessions.You are welcome to attend any event that interests you.</p>
         <ul style="margin-top: 6px">${eventListHtml} </ul>
         <p>visit : <a href = "https://avchamps.com">https://avchamps.com</a> -> SignIn -> Profile -> Tools -> Calendar</p>
          <p>Best Regards,<br>AV CHAMPS<br>
